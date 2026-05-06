@@ -1,29 +1,26 @@
 package com.example.f1latest
 
 import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 
-@JsonClass(generateAdapter = true)
 data class F1Response(
     @Json(name = "MRData") val mrData: MRData
 )
 
-@JsonClass(generateAdapter = true)
 data class MRData(
     @Json(name = "RaceTable") val raceTable: RaceTable
 )
 
-@JsonClass(generateAdapter = true)
 data class RaceTable(
     val season: String,
     val round: String,
     @Json(name = "Races") val races: List<Race>
 )
 
-@JsonClass(generateAdapter = true)
 data class Race(
     val season: String,
     val round: String,
@@ -34,13 +31,11 @@ data class Race(
     @Json(name = "Results") val results: List<Result>
 )
 
-@JsonClass(generateAdapter = true)
 data class Circuit(
     val circuitId: String,
     val circuitName: String
 )
 
-@JsonClass(generateAdapter = true)
 data class Result(
     val number: String,
     val position: String,
@@ -52,7 +47,6 @@ data class Result(
     @Json(name = "Time") val time: TimeInfo? = null
 )
 
-@JsonClass(generateAdapter = true)
 data class Driver(
     val driverId: String,
     val givenName: String,
@@ -60,14 +54,12 @@ data class Driver(
     val nationality: String
 )
 
-@JsonClass(generateAdapter = true)
 data class Constructor(
     val constructorId: String,
     val name: String,
     val nationality: String
 )
 
-@JsonClass(generateAdapter = true)
 data class TimeInfo(
     val millis: String?,
     val time: String?
@@ -81,9 +73,13 @@ interface F1ApiService {
         private const val BASE_URL = "https://api.jolpi.ca/ergast/f1/"
 
         fun create(): F1ApiService {
+            val moshi = Moshi.Builder()
+                .add(KotlinJsonAdapterFactory())
+                .build()
+
             return Retrofit.Builder()
                 .baseUrl(BASE_URL)
-                .addConverterFactory(MoshiConverterFactory.create())
+                .addConverterFactory(MoshiConverterFactory.create(moshi))
                 .build()
                 .create(F1ApiService::class.java)
         }
