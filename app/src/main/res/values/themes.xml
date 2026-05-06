@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.F1Latest" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/f1_red</item>
+    </style>
+</resources>
