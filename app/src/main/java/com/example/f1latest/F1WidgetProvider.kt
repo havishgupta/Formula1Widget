@@ -139,6 +139,8 @@ class F1WidgetProvider : AppWidgetProvider() {
             }
             
             return WidgetData(raceName = raceName, drivers = drivers)
+        } catch (e: java.net.UnknownHostException) {
+            return WidgetData(error = "No Internet Connection")
         } catch (e: Exception) {
             return WidgetData(error = e.localizedMessage ?: "Unknown Error")
         }
