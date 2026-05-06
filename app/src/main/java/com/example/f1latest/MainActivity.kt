@@ -3,21 +3,25 @@ package com.example.f1latest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.f1latest.ui.screens.ChampionshipsScreen
+import com.example.f1latest.ui.screens.LatestScreen
+import com.example.f1latest.ui.screens.ScheduleScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,136 +32,85 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    F1Screen()
+                    MainApp()
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun F1Screen(viewModel: MainViewModel = viewModel()) {
-    val uiState by viewModel.uiState.collectAsState()
+fun MainApp() {
+    val navController = rememberNavController()
+    val sharedViewModel: MainViewModel = viewModel()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("F1 Latest Results", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFF1801))
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.fetchLatestResults() },
-                containerColor = Color(0xFFFF1801)
-            ) {
-                Text("Refresh", color = Color.White, modifier = Modifier.padding(horizontal = 16.dp))
+        bottomBar = {
+            NavigationBar(containerColor = Color.White) {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.EmojiEvents, contentDescription = "Championships") },
+                    label = { Text("Standings") },
+                    selected = currentRoute == "championships",
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFFFF1801),
+                        selectedTextColor = Color(0xFFFF1801)
+                    ),
+                    onClick = {
+                        navController.navigate("championships") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.Timer, contentDescription = "Latest") },
+                    label = { Text("Latest") },
+                    selected = currentRoute == "latest",
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFFFF1801),
+                        selectedTextColor = Color(0xFFFF1801)
+                    ),
+                    onClick = {
+                        navController.navigate("latest") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+
+                NavigationBarItem(
+                    icon = { Icon(Icons.Filled.CalendarMonth, contentDescription = "All Races") },
+                    label = { Text("Schedule") },
+                    selected = currentRoute == "schedule",
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFFFF1801),
+                        selectedTextColor = Color(0xFFFF1801)
+                    ),
+                    onClick = {
+                        navController.navigate("schedule") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
             }
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+        NavHost(
+            navController = navController,
+            startDestination = "latest",
+            modifier = Modifier.padding(paddingValues)
         ) {
-            when (val state = uiState) {
-                is F1UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is F1UiState.Error -> {
-                    Text(
-                        text = state.message,
-                        color = Color.Red,
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                    )
-                }
-                is F1UiState.Success -> {
-                    val race = state.race
-                    Column {
-                        RaceHeader(race)
-                        LazyColumn {
-                            items(race.results) { result ->
-                                ResultRow(result)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RaceHeader(race: Race) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFFEEEEEE))
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Season ${race.season} - Round ${race.round}",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-        Text(
-            text = race.raceName,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = race.circuit.circuitName,
-            fontSize = 16.sp
-        )
-    }
-}
-
-@Composable
-fun ResultRow(result: Result) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = result.position,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.width(40.dp)
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${result.driver.givenName} ${result.driver.familyName}",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = result.constructor.name,
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "${result.points} pts",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFF1801)
-                )
-                Text(
-                    text = result.time?.time ?: result.status,
-                    fontSize = 12.sp,
-                    color = Color.DarkGray
-                )
-            }
+            composable("championships") { ChampionshipsScreen(viewModel = sharedViewModel) }
+            composable("latest") { LatestScreen(viewModel = sharedViewModel) }
+            composable("schedule") { ScheduleScreen(viewModel = sharedViewModel) }
         }
     }
 }
