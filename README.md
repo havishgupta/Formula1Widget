@@ -23,7 +23,7 @@ If you just want to install the app on your phone without touching any code, fol
 If you want to view the code, modify the app, or run it in an emulator:
 1. Clone this repository to your local machine: 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/F1-Latest-Android.git
+   git clone https://github.com/havishgupta/Formula1Widget.git
    ```
 2. Open **Android Studio**.
 3. Select **Open an existing Android Studio project** and navigate to the cloned folder.
