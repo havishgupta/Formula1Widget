@@ -1,41 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1E1E1E"
+    android:background="@android:color/black"
     android:orientation="vertical"
     android:padding="8dp">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/tv_widget_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:text="F1 Loading..."
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:textSize="14sp"/>
 
-        <TextView
-            android:id="@+id/tv_widget_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="F1 Latest"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textSize="14sp"/>
+    <Button
+        android:id="@+id/btn_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Refresh Data"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"/>
 
-        <Button
-            android:id="@+id/btn_refresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Update"
-            android:textSize="10sp"/>
-    </LinearLayout>
-
-    <TextView android:id="@+id/tv_driver_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" android:text=""/>
-    <TextView android:id="@+id/tv_driver_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" android:text=""/>
-    <TextView android:id="@+id/tv_driver_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" android:text=""/>
-    <TextView android:id="@+id/tv_driver_4" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" android:text=""/>
-    <TextView android:id="@+id/tv_driver_5" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" android:text=""/>
-    <TextView android:id="@+id/tv_driver_6" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" android:text=""/>
+    <TextView android:id="@+id/tv_driver_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="12sp" android:text=""/>
+    <TextView android:id="@+id/tv_driver_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="12sp" android:text=""/>
+    <TextView android:id="@+id/tv_driver_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="12sp" android:text=""/>
+    <TextView android:id="@+id/tv_driver_4" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="12sp" android:text=""/>
+    <TextView android:id="@+id/tv_driver_5" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="12sp" android:text=""/>
+    <TextView android:id="@+id/tv_driver_6" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="12sp" android:text=""/>
 
 </LinearLayout>
