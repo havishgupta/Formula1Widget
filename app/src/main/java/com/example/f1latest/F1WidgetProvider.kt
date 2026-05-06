@@ -90,6 +90,7 @@ class F1WidgetProvider : AppWidgetProvider() {
             val url = URL("https://api.jolpi.ca/ergast/f1/current/last/results.json")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 F1LatestWidget/1.0")
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
 
