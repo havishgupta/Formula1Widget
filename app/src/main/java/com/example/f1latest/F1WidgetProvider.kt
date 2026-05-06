@@ -85,64 +85,23 @@ class F1WidgetProvider : AppWidgetProvider() {
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 
-    private fun fetchF1Data(): WidgetData {
-        try {
-            val url = URL("https://api.jolpi.ca/ergast/f1/current/last/results.json")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 F1LatestWidget/1.0")
-            connection.connectTimeout = 10000
-            connection.readTimeout = 10000
-
-            if (connection.responseCode != 200) {
-                return WidgetData(error = "HTTP ${connection.responseCode}")
-            }
-
-            val responseStr = connection.inputStream.bufferedReader().use { it.readText() }
-            val json = JSONObject(responseStr)
+    private suspend fun fetchF1Data(): WidgetData {
+        return try {
+            val response = F1ApiService.create().getLatestResults()
+            val races = response.mrData.raceTable?.races
+            if (races.isNullOrEmpty()) return WidgetData(error = "No race data")
             
-            val mrData = json.getJSONObject("MRData")
-            val raceTable = mrData.getJSONObject("RaceTable")
-            val races = raceTable.getJSONArray("Races")
-            if (races.length() == 0) return WidgetData(error = "No race data")
+            val race = races[0]
+            val raceName = race.raceName
+            val results = race.results ?: emptyList()
             
-            val race = races.getJSONObject(0)
-            val raceName = race.getString("raceName")
-            val results = race.getJSONArray("Results")
-            
-            val drivers = mutableListOf<String>()
-            var maxFound = false
-            var maxDriverStr = ""
-            
-            for (i in 0 until results.length()) {
-                val result = results.getJSONObject(i)
-                val position = result.getString("position")
-                val points = result.getString("points")
-                val driverObj = result.getJSONObject("Driver")
-                val familyName = driverObj.getString("familyName")
-                val givenName = driverObj.getString("givenName")
-                
-                val driverStr = "$position. $givenName $familyName - $points pts"
-                
-                if (i < 5) {
-                    drivers.add(driverStr)
-                }
-                
-                if (familyName == "Verstappen") {
-                    maxFound = true
-                    maxDriverStr = driverStr
-                }
+            val drivers = results.take(5).map { result ->
+                "${result.position}. ${result.driver.givenName} ${result.driver.familyName} - ${result.points} pts"
             }
             
-            if (!maxFound && maxDriverStr.isNotEmpty() && !drivers.contains(maxDriverStr)) {
-                drivers.add(maxDriverStr)
-            }
-            
-            return WidgetData(raceName = raceName, drivers = drivers)
-        } catch (e: java.net.UnknownHostException) {
-            return WidgetData(error = "No Internet Connection")
+            WidgetData(raceName = raceName, drivers = drivers)
         } catch (e: Exception) {
-            return WidgetData(error = e.localizedMessage ?: "Unknown Error")
+            WidgetData(error = e.localizedMessage ?: "Unknown Error")
         }
     }
 
