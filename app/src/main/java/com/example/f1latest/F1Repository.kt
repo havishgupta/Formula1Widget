@@ -1,70 +1,65 @@
 package com.example.f1latest
 
-import java.net.UnknownHostException
-
 class F1Repository {
     private val ergastPrimary = F1ApiService.create(F1ApiService.getPrimaryUrl())
     private val ergastFallback = F1ApiService.create(F1ApiService.getFallbackUrl())
     private val openF1 = OpenF1ApiService.create()
 
-    suspend fun getLatestResults(): Race? {
+    private suspend fun <T> withFallback(
+        primaryCall: suspend () -> T,
+        fallbackCall: suspend () -> T
+    ): T? {
         return try {
-            ergastPrimary.getLatestResults().mrData.raceTable?.races?.firstOrNull()
-        } catch (e: UnknownHostException) {
-            ergastFallback.getLatestResults().mrData.raceTable?.races?.firstOrNull()
+            primaryCall()
         } catch (e: Exception) {
-            null
+            try {
+                fallbackCall()
+            } catch (e2: Exception) {
+                null
+            }
         }
+    }
+
+    suspend fun getLatestResults(): Race? {
+        return withFallback(
+            { ergastPrimary.getLatestResults().mrData.raceTable?.races?.firstOrNull() },
+            { ergastFallback.getLatestResults().mrData.raceTable?.races?.firstOrNull() }
+        )
     }
 
     suspend fun getLatestQualifying(): Race? {
-        return try {
-            ergastPrimary.getLatestQualifying().mrData.raceTable?.races?.firstOrNull()
-        } catch (e: UnknownHostException) {
-            ergastFallback.getLatestQualifying().mrData.raceTable?.races?.firstOrNull()
-        } catch (e: Exception) {
-            null
-        }
+        return withFallback(
+            { ergastPrimary.getLatestQualifying().mrData.raceTable?.races?.firstOrNull() },
+            { ergastFallback.getLatestQualifying().mrData.raceTable?.races?.firstOrNull() }
+        )
     }
 
     suspend fun getDriverStandings(): List<DriverStanding>? {
-        return try {
-            ergastPrimary.getDriverStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.driverStandings
-        } catch (e: UnknownHostException) {
-            ergastFallback.getDriverStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.driverStandings
-        } catch (e: Exception) {
-            null
-        }
+        return withFallback(
+            { ergastPrimary.getDriverStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.driverStandings },
+            { ergastFallback.getDriverStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.driverStandings }
+        )
     }
 
     suspend fun getConstructorStandings(): List<ConstructorStanding>? {
-        return try {
-            ergastPrimary.getConstructorStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.constructorStandings
-        } catch (e: UnknownHostException) {
-            ergastFallback.getConstructorStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.constructorStandings
-        } catch (e: Exception) {
-            null
-        }
+        return withFallback(
+            { ergastPrimary.getConstructorStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.constructorStandings },
+            { ergastFallback.getConstructorStandings().mrData.standingsTable?.standingsLists?.firstOrNull()?.constructorStandings }
+        )
     }
 
     suspend fun getSchedule(): List<Race>? {
-        return try {
-            ergastPrimary.getSchedule().mrData.raceTable?.races
-        } catch (e: UnknownHostException) {
-            ergastFallback.getSchedule().mrData.raceTable?.races
-        } catch (e: Exception) {
-            null
-        }
+        return withFallback(
+            { ergastPrimary.getSchedule().mrData.raceTable?.races },
+            { ergastFallback.getSchedule().mrData.raceTable?.races }
+        )
     }
 
     suspend fun getRaceResults(round: String): Race? {
-        return try {
-            ergastPrimary.getRaceResults(round).mrData.raceTable?.races?.firstOrNull()
-        } catch (e: UnknownHostException) {
-            ergastFallback.getRaceResults(round).mrData.raceTable?.races?.firstOrNull()
-        } catch (e: Exception) {
-            null
-        }
+        return withFallback(
+            { ergastPrimary.getRaceResults(round).mrData.raceTable?.races?.firstOrNull() },
+            { ergastFallback.getRaceResults(round).mrData.raceTable?.races?.firstOrNull() }
+        )
     }
 
     suspend fun getLatestSession(): Session? {
