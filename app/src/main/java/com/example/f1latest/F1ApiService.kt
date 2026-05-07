@@ -3,10 +3,12 @@ package com.example.f1latest
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
+import java.util.concurrent.TimeUnit
 
 // --- Common ---
 data class Driver(
@@ -121,12 +123,24 @@ interface F1ApiService {
         private const val BASE_URL = "https://api.jolpi.ca/ergast/f1/"
 
         fun create(): F1ApiService {
+            val client = OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .addInterceptor { chain ->
+                    val request = chain.request().newBuilder()
+                        .header("User-Agent", "F1LatestApp/1.0")
+                        .build()
+                    chain.proceed(request)
+                }
+                .build()
+
             val moshi = Moshi.Builder()
                 .add(KotlinJsonAdapterFactory())
                 .build()
 
             return Retrofit.Builder()
                 .baseUrl(BASE_URL)
+                .client(client)
                 .addConverterFactory(MoshiConverterFactory.create(moshi))
                 .build()
                 .create(F1ApiService::class.java)

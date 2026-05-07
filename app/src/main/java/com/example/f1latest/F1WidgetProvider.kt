@@ -41,15 +41,16 @@ class F1WidgetProvider : AppWidgetProvider() {
                         )
                         views.setOnClickPendingIntent(R.id.btn_refresh, pendingIntent)
 
+                        val tvIds = listOf(
+                            R.id.tv_driver_1, R.id.tv_driver_2, R.id.tv_driver_3,
+                            R.id.tv_driver_4, R.id.tv_driver_5, R.id.tv_driver_6
+                        )
+                        for (id in tvIds) views.setTextViewText(id, "")
+
                         if (resultData.error != null) {
                             views.setTextViewText(R.id.tv_widget_title, "Error: ${resultData.error}")
                         } else {
                             views.setTextViewText(R.id.tv_widget_title, resultData.raceName)
-                            val tvIds = listOf(
-                                R.id.tv_driver_1, R.id.tv_driver_2, R.id.tv_driver_3,
-                                R.id.tv_driver_4, R.id.tv_driver_5, R.id.tv_driver_6
-                            )
-                            for (id in tvIds) views.setTextViewText(id, "")
                             for (i in resultData.drivers.indices) {
                                 if (i < tvIds.size) {
                                     views.setTextViewText(tvIds[i], resultData.drivers[i])
