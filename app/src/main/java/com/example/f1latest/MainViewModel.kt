@@ -14,7 +14,7 @@ sealed class F1UiState {
 }
 
 class MainViewModel : ViewModel() {
-    private val apiService = F1ApiService.create()
+    private val repository = F1Repository()
 
     private val _latestRaceState = MutableStateFlow<F1UiState>(F1UiState.Loading)
     val latestRaceState: StateFlow<F1UiState> = _latestRaceState.asStateFlow()
@@ -37,16 +37,11 @@ class MainViewModel : ViewModel() {
     fun fetchLatestResults() {
         _latestRaceState.value = F1UiState.Loading
         viewModelScope.launch {
-            try {
-                val response = apiService.getLatestResults()
-                val races = response.mrData.raceTable?.races
-                if (!races.isNullOrEmpty()) {
-                    _latestRaceState.value = F1UiState.Success(races.first())
-                } else {
-                    _latestRaceState.value = F1UiState.Error("No race data found.")
-                }
-            } catch (e: Exception) {
-                _latestRaceState.value = F1UiState.Error("Failed to fetch latest: ${e.localizedMessage}")
+            val race = repository.getLatestResults()
+            if (race != null) {
+                _latestRaceState.value = F1UiState.Success(race)
+            } else {
+                _latestRaceState.value = F1UiState.Error("Failed to fetch latest. Check internet.")
             }
         }
     }
@@ -55,26 +50,18 @@ class MainViewModel : ViewModel() {
         _wdcState.value = F1UiState.Loading
         _wccState.value = F1UiState.Loading
         viewModelScope.launch {
-            try {
-                val wdcResponse = apiService.getDriverStandings()
-                val wdcList = wdcResponse.mrData.standingsTable?.standingsLists?.firstOrNull()?.driverStandings
-                if (wdcList != null) {
-                    _wdcState.value = F1UiState.Success(wdcList)
-                } else {
-                    _wdcState.value = F1UiState.Error("No WDC data found.")
-                }
+            val wdcList = repository.getDriverStandings()
+            if (wdcList != null) {
+                _wdcState.value = F1UiState.Success(wdcList)
+            } else {
+                _wdcState.value = F1UiState.Error("No WDC data found.")
+            }
 
-                val wccResponse = apiService.getConstructorStandings()
-                val wccList = wccResponse.mrData.standingsTable?.standingsLists?.firstOrNull()?.constructorStandings
-                if (wccList != null) {
-                    _wccState.value = F1UiState.Success(wccList)
-                } else {
-                    _wccState.value = F1UiState.Error("No WCC data found.")
-                }
-
-            } catch (e: Exception) {
-                _wdcState.value = F1UiState.Error("Failed to fetch standings: ${e.localizedMessage}")
-                _wccState.value = F1UiState.Error("Failed to fetch standings: ${e.localizedMessage}")
+            val wccList = repository.getConstructorStandings()
+            if (wccList != null) {
+                _wccState.value = F1UiState.Success(wccList)
+            } else {
+                _wccState.value = F1UiState.Error("No WCC data found.")
             }
         }
     }
@@ -82,16 +69,11 @@ class MainViewModel : ViewModel() {
     fun fetchSchedule() {
         _scheduleState.value = F1UiState.Loading
         viewModelScope.launch {
-            try {
-                val response = apiService.getSchedule()
-                val races = response.mrData.raceTable?.races
-                if (races != null) {
-                    _scheduleState.value = F1UiState.Success(races)
-                } else {
-                    _scheduleState.value = F1UiState.Error("No schedule data found.")
-                }
-            } catch (e: Exception) {
-                _scheduleState.value = F1UiState.Error("Failed to fetch schedule: ${e.localizedMessage}")
+            val races = repository.getSchedule()
+            if (races != null) {
+                _scheduleState.value = F1UiState.Success(races)
+            } else {
+                _scheduleState.value = F1UiState.Error("Failed to fetch schedule.")
             }
         }
     }
@@ -103,16 +85,11 @@ class MainViewModel : ViewModel() {
     fun fetchRaceResults(round: String) {
         _specificRaceState.value = F1UiState.Loading
         viewModelScope.launch {
-            try {
-                val response = apiService.getRaceResults(round)
-                val races = response.mrData.raceTable?.races
-                if (!races.isNullOrEmpty()) {
-                    _specificRaceState.value = F1UiState.Success(races.first())
-                } else {
-                    _specificRaceState.value = F1UiState.Error("No results found for round $round.")
-                }
-            } catch (e: Exception) {
-                _specificRaceState.value = F1UiState.Error("Failed to fetch results: ${e.localizedMessage}")
+            val race = repository.getRaceResults(round)
+            if (race != null) {
+                _specificRaceState.value = F1UiState.Success(race)
+            } else {
+                _specificRaceState.value = F1UiState.Error("No results found for round $round.")
             }
         }
     }
