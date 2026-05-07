@@ -58,7 +58,18 @@ data class Race(
     @Json(name = "Circuit") val circuit: Circuit,
     val date: String,
     val time: String?,
-    @Json(name = "Results") val results: List<Result>? = null
+    @Json(name = "Results") val results: List<Result>? = null,
+    @Json(name = "QualifyingResults") val qualifyingResults: List<QualifyingResult>? = null
+)
+
+data class QualifyingResult(
+    val number: String,
+    val position: String,
+    @Json(name = "Driver") val driver: Driver,
+    @Json(name = "Constructor") val constructor: Constructor,
+    @Json(name = "Q1") val q1: String?,
+    @Json(name = "Q2") val q2: String?,
+    @Json(name = "Q3") val q3: String?
 )
 
 data class Result(
@@ -106,6 +117,9 @@ data class ConstructorStanding(
 interface F1ApiService {
     @GET("current/last/results.json")
     suspend fun getLatestResults(): F1Response
+
+    @GET("current/last/qualifying.json")
+    suspend fun getLatestQualifying(): F1Response
 
     @GET("current/driverStandings.json")
     suspend fun getDriverStandings(): F1Response

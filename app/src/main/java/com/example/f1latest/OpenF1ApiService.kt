@@ -24,7 +24,44 @@ data class IntervalData(
     @Json(name = "interval") val interval: Double?
 )
 
+data class Session(
+    @Json(name = "session_key") val sessionKey: Int,
+    @Json(name = "session_name") val sessionName: String,
+    @Json(name = "session_type") val sessionType: String,
+    @Json(name = "date_start") val dateStart: String,
+    @Json(name = "date_end") val dateEnd: String,
+    @Json(name = "circuit_short_name") val circuitName: String
+)
+
+data class Lap(
+    @Json(name = "driver_number") val driverNumber: Int,
+    @Json(name = "lap_duration") val lapDuration: Double?,
+    @Json(name = "is_pit_out_lap") val isPitOutLap: Boolean
+)
+
+data class OpenF1Driver(
+    @Json(name = "driver_number") val driverNumber: Int,
+    @Json(name = "full_name") val fullName: String,
+    @Json(name = "name_acronym") val nameAcronym: String,
+    @Json(name = "team_name") val teamName: String
+)
+
 interface OpenF1ApiService {
+    @GET("sessions")
+    suspend fun getSessions(
+        @Query("session_key") sessionKey: String = "latest"
+    ): List<Session>
+
+    @GET("laps")
+    suspend fun getLaps(
+        @Query("session_key") sessionKey: Int
+    ): List<Lap>
+
+    @GET("drivers")
+    suspend fun getDrivers(
+        @Query("session_key") sessionKey: Int
+    ): List<OpenF1Driver>
+
     @GET("race_control")
     suspend fun getRaceControl(
         @Query("session_key") sessionKey: String = "latest"

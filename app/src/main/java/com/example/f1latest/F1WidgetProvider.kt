@@ -17,6 +17,8 @@ class F1WidgetProvider : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             setInitialViews(context, appWidgetManager, appWidgetId)
         }
+        val refreshIntent = Intent(context, F1WidgetProvider::class.java).apply { action = ACTION_REFRESH }
+        context.sendBroadcast(refreshIntent)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -85,19 +87,62 @@ class F1WidgetProvider : AppWidgetProvider() {
 
     private suspend fun fetchF1Data(): WidgetData {
         return try {
-            val response = F1ApiService.create().getLatestResults()
-            val races = response.mrData.raceTable?.races
-            if (races.isNullOrEmpty()) return WidgetData(error = "No race data")
+            val openF1 = OpenF1ApiService.create()
+            val ergast = F1ApiService.create()
             
-            val race = races[0]
-            val raceName = race.raceName
-            val results = race.results ?: emptyList()
+            val latestSession = openF1.getSessions("latest").firstOrNull()
             
-            val drivers = results.take(5).map { result ->
-                "${result.position}. ${result.driver.givenName} ${result.driver.familyName} - ${result.points} pts"
+            // If it's a practice session, we use OpenF1 for real-time practice results
+            if (latestSession != null && latestSession.sessionType.contains("Practice", ignoreCase = true)) {
+                val laps = openF1.getLaps(latestSession.sessionKey)
+                val driversInfo = openF1.getDrivers(latestSession.sessionKey).associateBy { it.driverNumber }
+                
+                val fastestLaps = laps
+                    .filter { it.lapDuration != null && it.lapDuration > 0 && !it.isPitOutLap }
+                    .groupBy { it.driverNumber }
+                    .mapValues { it.value.minOf { lap -> lap.lapDuration!! } }
+                    .toList()
+                    .sortedBy { it.second }
+                    .take(5)
+                
+                if (fastestLaps.isNotEmpty()) {
+                    val drivers = fastestLaps.mapIndexed { i, pair ->
+                        val info = driversInfo[pair.first]
+                        val time = String.format("%.3f", pair.second)
+                        "${i + 1}. ${info?.fullName ?: "Driver ${pair.first}"} - $time"
+                    }
+                    return WidgetData(raceName = "${latestSession.circuitName} - ${latestSession.sessionName}", drivers = drivers)
+                }
             }
+
+            // Fallback to Ergast for Qualifying and Race results
+            val raceResponse = ergast.getLatestResults()
+            val qualResponse = ergast.getLatestQualifying()
             
-            WidgetData(raceName = raceName, drivers = drivers)
+            val latestRace = raceResponse.mrData.raceTable?.races?.firstOrNull()
+            val latestQual = qualResponse.mrData.raceTable?.races?.firstOrNull()
+            
+            val showQual = if (latestRace != null && latestQual != null) {
+                val raceRound = latestRace.round.toIntOrNull() ?: 0
+                val qualRound = latestQual.round.toIntOrNull() ?: 0
+                qualRound > raceRound
+            } else {
+                latestRace == null
+            }
+
+            if (showQual && latestQual != null) {
+                val drivers = latestQual.qualifyingResults?.take(5)?.map {
+                    "${it.position}. ${it.driver.givenName} ${it.driver.familyName}"
+                } ?: emptyList()
+                WidgetData(raceName = "${latestQual.raceName} (Quali)", drivers = drivers)
+            } else if (latestRace != null) {
+                val drivers = latestRace.results?.take(5)?.map {
+                    "${it.position}. ${it.driver.givenName} ${it.driver.familyName} - ${it.points} pts"
+                } ?: emptyList()
+                WidgetData(raceName = latestRace.raceName, drivers = drivers)
+            } else {
+                WidgetData(error = "No session data")
+            }
         } catch (e: Exception) {
             WidgetData(error = e.localizedMessage ?: "Unknown Error")
         }
