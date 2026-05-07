@@ -134,12 +134,13 @@ interface F1ApiService {
     suspend fun getRaceResults(@Path("round") round: String): F1Response
 
     companion object {
-        private const val BASE_URL = "https://api.jolpi.ca/ergast/f1/"
+        private const val PRIMARY_URL = "https://api.jolpi.ca/ergast/f1/"
+        private const val FALLBACK_URL = "https://ergast.com/api/f1/"
 
-        fun create(): F1ApiService {
+        fun create(baseUrl: String = PRIMARY_URL): F1ApiService {
             val client = OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
                 .addInterceptor { chain ->
                     val request = chain.request().newBuilder()
                         .header("User-Agent", "F1LatestApp/1.0")
@@ -153,11 +154,14 @@ interface F1ApiService {
                 .build()
 
             return Retrofit.Builder()
-                .baseUrl(BASE_URL)
+                .baseUrl(baseUrl)
                 .client(client)
                 .addConverterFactory(MoshiConverterFactory.create(moshi))
                 .build()
                 .create(F1ApiService::class.java)
         }
+        
+        fun getPrimaryUrl() = PRIMARY_URL
+        fun getFallbackUrl() = FALLBACK_URL
     }
 }

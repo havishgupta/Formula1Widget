@@ -88,39 +88,64 @@ class F1WidgetProvider : AppWidgetProvider() {
     private suspend fun fetchF1Data(): WidgetData {
         return try {
             val openF1 = OpenF1ApiService.create()
-            val ergast = F1ApiService.create()
             
-            val latestSession = openF1.getSessions("latest").firstOrNull()
+            // Try OpenF1 first for latest session info
+            val latestSession = try {
+                openF1.getSessions("latest").firstOrNull()
+            } catch (e: java.net.UnknownHostException) {
+                null // If OpenF1 is also down, we'll handle it below
+            } catch (e: Exception) {
+                null
+            }
             
-            // If it's a practice session, we use OpenF1 for real-time practice results
             if (latestSession != null && latestSession.sessionType.contains("Practice", ignoreCase = true)) {
-                val laps = openF1.getLaps(latestSession.sessionKey)
-                val driversInfo = openF1.getDrivers(latestSession.sessionKey).associateBy { it.driverNumber }
-                
-                val fastestLaps = laps
-                    .filter { it.lapDuration != null && it.lapDuration > 0 && !it.isPitOutLap }
-                    .groupBy { it.driverNumber }
-                    .mapValues { it.value.minOf { lap -> lap.lapDuration!! } }
-                    .toList()
-                    .sortedBy { it.second }
-                    .take(5)
-                
-                if (fastestLaps.isNotEmpty()) {
-                    val drivers = fastestLaps.mapIndexed { i, pair ->
-                        val info = driversInfo[pair.first]
-                        val time = String.format("%.3f", pair.second)
-                        "${i + 1}. ${info?.fullName ?: "Driver ${pair.first}"} - $time"
+                try {
+                    val laps = openF1.getLaps(latestSession.sessionKey)
+                    val driversInfo = openF1.getDrivers(latestSession.sessionKey).associateBy { it.driverNumber }
+                    
+                    val fastestLaps = laps
+                        .filter { it.lapDuration != null && it.lapDuration > 0 && !it.isPitOutLap }
+                        .groupBy { it.driverNumber }
+                        .mapValues { it.value.minOf { lap -> lap.lapDuration!! } }
+                        .toList()
+                        .sortedBy { it.second }
+                        .take(5)
+                    
+                    if (fastestLaps.isNotEmpty()) {
+                        val drivers = fastestLaps.mapIndexed { i, pair ->
+                            val info = driversInfo[pair.first]
+                            val time = String.format("%.3f", pair.second)
+                            "${i + 1}. ${info?.fullName ?: "Driver ${pair.first}"} - $time"
+                        }
+                        return WidgetData(raceName = "${latestSession.circuitName} - ${latestSession.sessionName}", drivers = drivers)
                     }
-                    return WidgetData(raceName = "${latestSession.circuitName} - ${latestSession.sessionName}", drivers = drivers)
+                } catch (e: Exception) {
+                    // Fallback to Ergast if practice data fetch fails
                 }
             }
 
-            // Fallback to Ergast for Qualifying and Race results
+            // Fallback to Ergast (Primary then Fallback)
+            fetchFromErgast(F1ApiService.getPrimaryUrl())
+                ?: fetchFromErgast(F1ApiService.getFallbackUrl())
+                ?: WidgetData(error = "Network/DNS Error. Check connection.")
+                
+        } catch (e: java.net.UnknownHostException) {
+            WidgetData(error = "Unable to resolve host. Check internet.")
+        } catch (e: Exception) {
+            WidgetData(error = e.localizedMessage ?: "Unknown Error")
+        }
+    }
+
+    private suspend fun fetchFromErgast(url: String): WidgetData? {
+        return try {
+            val ergast = F1ApiService.create(url)
             val raceResponse = ergast.getLatestResults()
             val qualResponse = ergast.getLatestQualifying()
             
             val latestRace = raceResponse.mrData.raceTable?.races?.firstOrNull()
             val latestQual = qualResponse.mrData.raceTable?.races?.firstOrNull()
+            
+            if (latestRace == null && latestQual == null) return null
             
             val showQual = if (latestRace != null && latestQual != null) {
                 val raceRound = latestRace.round.toIntOrNull() ?: 0
@@ -140,11 +165,9 @@ class F1WidgetProvider : AppWidgetProvider() {
                     "${it.position}. ${it.driver.givenName} ${it.driver.familyName} - ${it.points} pts"
                 } ?: emptyList()
                 WidgetData(raceName = latestRace.raceName, drivers = drivers)
-            } else {
-                WidgetData(error = "No session data")
-            }
+            } else null
         } catch (e: Exception) {
-            WidgetData(error = e.localizedMessage ?: "Unknown Error")
+            null
         }
     }
 
